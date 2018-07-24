@@ -1,0 +1,120 @@
+---
+  - name: set internal variables for convenience
+    set_fact:
+      openresty_tarball_url: "https://openresty.org/download/openresty-{{ openresty_version }}.tar.gz"
+      openresty_untar_path: "{{ openresty_download_path }}"
+      openresty_name : "openresty-{{openresty_version}}"
+
+  - name: set openresty_build_dir
+    set_fact:
+      openresty_build_dir : "{{openresty_untar_path}}/{{openresty_name}}"
+      
+  - name: download openresty tarball
+    get_url: url="{{ openresty_tarball_url }}"  dest="{{ openresty_download_path }}"
+
+
+  - name: untar openresty tarball
+    unarchive:
+      src: "{{ openresty_download_path }}/{{openresty_name}}.tar.gz"
+      dest: "{{ openresty_untar_path }}"
+      copy: no
+      
+  - name: configure openresty...
+    become: yes
+    become_user: root
+    command: >-
+      ./configure
+      --prefix={{openresty_install_dir}}
+
+      --sbin-path={{sbin_path}}
+      --conf-path={{conf_path}}
+      --error-log-path={{error_log_path}}
+      --http-client-body-temp-path={{http_client_body_temp_path}}
+      --http-fastcgi-temp-path={{http_fastcgi_temp_path}}
+      --http-log-path={{http_log_path}}
+      --http-proxy-temp-path={{http_proxy_temp_path}}
+      --http-scgi-temp-path={{http_scgi_temp_path}}
+      --http-uwsgi-temp-path={{http_uwsgi_temp_path}}
+      --lock-path={{lock_path}}
+      --pid-path={{pid_path}}
+      
+      --with-sha1={{with_sha1}}
+      --with-md5={{with_md5}}
+      --with-http_stub_status_module
+      --with-http_secure_link_module
+      --with-luajit
+      --with-pcre-jit
+      --with-http_stub_status_module
+      --with-http_ssl_module
+      --with-ipv6
+    args:
+      chdir: '{{openresty_build_dir}}'
+      creates: '{{openresty_build_dir}}/Makefile'
+
+  - name: make build install...
+    become: yes
+    become_user: root
+    command: make build install
+    args:
+      chdir: '{{openresty_build_dir}}'
+      creates: '{{openresty_install_dir}}/nginx/sbin/nginx'
+
+
+  - name: Create nginx requirement folder
+    become: yes
+    become_user: root
+    with_items:
+      - '/etc/nginx/sites-available'
+      - '/etc/nginx/sites-enabled'
+      - '/var/lib/nginx/body'
+      - '/var/lib/nginx/fastcgi'
+      - '/var/lib/nginx/proxy'
+      - '/var/lib/nginx/scgi'
+      - '/var/lib/nginx/uwsgi'
+    file:
+      path: '{{item}}'
+      state: directory
+      mode: '0755'
+
+  - name: copy Nginx main config file from role's default, if necessary
+    template:
+      src:  ../templates/nginx.conf.j2
+      dest: /etc/nginx/nginx.conf
+      # validate: "nginx -t -c %s"
+    when: nginx_conf_main is not defined
+    notify:
+      - reload nginx
+
+  - name: copy Nginx main config file from playbook's, if any
+    template:
+      src:  "{{ playbook_dir }}/{{ nginx_conf_main }}"
+      dest: /etc/nginx/nginx.conf
+      # validate: "nginx -t -c %s"
+    when: nginx_conf_main is defined
+    notify:
+      - reload nginx
+
+  - name: copy other Nginx config files from playbook's, if any
+    template:
+      src:  "{{ playbook_dir }}/{{ item.value.src }}"
+      dest: "/etc/nginx/sites-enabled/{{ item.value.dest }}"
+      #validate: "nginx -t -c %s"
+    with_dict: "{{ nginx_conf_others | default({}) }}"
+    notify:
+      - reload nginx
+
+  - name: Copy nginx systemd config
+    sudo: True
+    template:
+      src:  ../templates/systemd_nginx.service.j2
+      dest: /etc/systemd/system/nginx.service
+
+  - name: cleanup...
+    become: yes
+    become_user: root
+    with_items:
+      - '{{openresty_build_dir}}'
+      - '{{openresty_build_dir}}.tar.gz'
+    file:
+      path: '{{item}}'
+      state: absent

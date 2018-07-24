@@ -1,0 +1,19 @@
+---
+# meta/main.yml
+
+galaxy_info:
+    author: ericyu
+    description: Openresty
+    license: MIT
+    min_ansible_version: 1.9.6
+
+    platforms:
+        - name: Ubuntu
+          versions:
+              - xenial
+
+    galaxy_tags:
+        - openresty
+        - nginx
+
+dependencies: []

@@ -1,0 +1,15 @@
+---
+- name: delegate to APT system for installation
+  sudo: True
+  apt: name={{ item }} state=present update_cache=yes
+  with_items:
+    - make
+    - gcc
+    - libpcre3-dev
+    - libssl-dev
+
+- name: set role variables, if necessary
+  include: set-role-variables.yml
+
+- name: install openresty
+  include: install-openresty.yml

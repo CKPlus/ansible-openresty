@@ -1,0 +1,19 @@
+- hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - include: 'tasks/main.yml'
+    - include: 'handlers/main.yml'
+  vars_files:
+    - 'defaults/main.yml'
+
+  vars:
+    locale: "en_US.UTF-8"
+
+  pre_tasks:
+    - name: Install python2 for Ansible
+      raw: bash -c "test -e /usr/bin/python || (apt -qqy update && apt install -qqy python-minimal)"
+      register: output
+      changed_when: output.stdout != ""
+    - name: Gathering Facts
+      setup:
