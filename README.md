@@ -4,7 +4,7 @@ ericyu.openresty for Ansible Galaxy
 
 ## Summary
 
-Role name in Ansible Galaxy: **[ckplus.prometheus](https://galaxy.ansible.com/ckplus/ansible_openresty)**
+Role name in Ansible Galaxy: **[ckplus.openresty](https://galaxy.ansible.com/ckplus/ansible_openresty)**
 This Ansible role has the following features for [Openresty](https://openresty.org/en/):
 
 
