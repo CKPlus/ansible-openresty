@@ -10,7 +10,7 @@
       openresty_build_dir : "{{openresty_untar_path}}/{{openresty_name}}"
       
   - name: download openresty tarball
-    get_url: url="{{ openresty_tarball_url }}"  dest="{{ openresty_download_path }}"
+    get_url: url="{{ openresty_tarball_url }}"  dest="{{ openresty_download_path }}" timeout=60
 
 
   - name: untar openresty tarball
